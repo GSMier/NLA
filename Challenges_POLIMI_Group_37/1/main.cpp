@@ -20,7 +20,30 @@ int main() {
     Hav1 << 1, 1, 1,
             1, 4, 1,
             1, 1, 1;
-    Hav1 = Hav1 * 1/12;
+    Hav1 *= 1/12;
+
+    MatrixXd Hav2(5, 5);
+    Hav2 << 0, 1,  2, 1, 0,
+            1, 4,  8, 4, 1,
+            2, 8, 16, 8, 2,
+            1, 4,  8, 4, 1,
+            0, 1,  2, 1, 0;
+    Hav2 *= 1/80;
+
+    MatrixXd Hsh1(3. 3);
+    Hsh1 << 0, -3,  0,
+           -1,  9, -3,
+            0, -1,  0;
+
+    MatrixXd Hed1(3, 3);
+    Hed1 << 0, -1,  0,
+           -1,  4, -1,
+            0, -1,  0;
+
+    MatrixXd Hed2(3, 3);
+    Hed2 << -1, 0, 1,
+            -2, 0, 2,
+            -1, 0, 1;
 
     //  Load the image as an Eigen matrix with size m × n. Each entry in the matrix corresponds
     // to a pixel on the screen and takes a value somewhere between 0 (black) and 255 (white).
