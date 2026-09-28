@@ -20,7 +20,7 @@ int main() {
     Hav1 << 1, 1, 1,
             1, 4, 1,
             1, 1, 1;
-    Hav1 *= 1/12;
+    Hav1 *= 1./12;
 
     MatrixXd Hav2(5, 5);
     Hav2 << 0, 1,  2, 1, 0,
@@ -28,9 +28,9 @@ int main() {
             2, 8, 16, 8, 2,
             1, 4,  8, 4, 1,
             0, 1,  2, 1, 0;
-    Hav2 *= 1/80;
+    Hav2 *= 1./80;
 
-    MatrixXd Hsh1(3. 3);
+    MatrixXd Hsh1(3,3);
     Hsh1 << 0, -3,  0,
            -1,  9, -3,
             0, -1,  0;
@@ -84,6 +84,7 @@ int main() {
     MatrixXd noisy = original;
     noisy.array() += MatrixXd::Random(height, width).array() * 50.0;
 
+
     std::vector<unsigned char> output(static_cast<size_t>(width) * height);
     for (int i = 0; i < height; ++i) {
         for (int j = 0; j < width; ++j) {
@@ -106,8 +107,11 @@ int main() {
     * @brief Reshape the matrices as vector
     *
     */
-    Map<VectorXd> v(original.data(), original.size());
-    Map<VectorXd> w(noisy.data(), noisy.size());
+    MatrixXd v = original.reshaped<RowMajor>(1, original.size());
+
+    MatrixXd w = noisy.reshaped<RowMajor>(1, noisy.size());
+
+
 
     std::cout << "Shape of image_data: " << get_shape(v) << std::endl;
     std::cout << "Shape of noisy image: " << get_shape(w) << std::endl;
@@ -121,6 +125,7 @@ int main() {
     // • Write the convolution operation corresponding to the smoothing kernel Hav1
     // as a matrix vector multiplication between a matrix A1 having size mn × mn and the image vector.
     // Report the number of non-zero entries in A1
+
 
     // • Apply the previous smoothing ﬁlter to the noisy image by performing the matrix vector
     // multiplication A1w. Export and upload the resulting image.
