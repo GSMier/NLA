@@ -10,6 +10,8 @@
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include "stb_image_write.h"
 
+#include <lis.h>
+
 typedef Eigen::SparseMatrix<double> SpMat;
 using namespace Eigen;
 
@@ -74,7 +76,8 @@ SpMat generate_conv_matrix(const MatrixXd& conv_mat, int width, int height) {
             // get the index of the pixel that the conv_mat is referring to
             const int current_mat_index = width * (mat_pixel_row) + (mat_pixel_col);
             // and its value
-            const double current_mat_value = conv_mat(half_mat_rows + current_mat_row, half_mat_cols + current_mat_col);
+            const double current_mat_value = conv_mat(half_mat_rows + current_mat_row,
+                                                      half_mat_cols + current_mat_col);
 
             // optimization - if it's zero we can avoid adding it 
             if (current_mat_value == 0.0) { continue; }
