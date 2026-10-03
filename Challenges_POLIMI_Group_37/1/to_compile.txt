@@ -2,4 +2,5 @@ apptainer shell <your apptainer>
 source /u/sw/etc/bash.bashrc
 module load gcc-glibc
 module load lis
-g++ main.cpp -I "$mkEigenInc" -llis -o main
+
+mpicxx -DUSE_MPI main.cpp -I"$mkEigenInc" -I"$mkLisInc" -L"$mkLisLib" -llis -o main

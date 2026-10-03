@@ -11,6 +11,7 @@
 #include "stb_image_write.h"
 
 #include <lis.h>
+#include <unsupported/Eigen/SparseExtra>
 
 typedef Eigen::SparseMatrix<double> SpMat;
 using namespace Eigen;
@@ -109,7 +110,7 @@ std::string get_shape(int rows, int cols)
   return "(" + std::to_string(rows) + ", " + std::to_string(cols) + ")";
 }
 
-int main() {
+int main(int argc, char* argv[]) {
 
   // NICELY FORMATTED PLEASE DON'T CHANGE!!!
   // IT TOOK ME AN HOUR T.T
@@ -244,11 +245,65 @@ int main() {
   // • Export the Eigen matrix A2 and vector w in the .mtx format. Using a
   // suitable iterative solver and preconditioning technique available in the
   // LIS library compute the approximate solution to the linear system A2 x = w
-  // prescribing a tolerance of 10−12. Report here the iteration count and the
+  // prescribing a tolerance of 10^−12. Report here the iteration count and the
   // ﬁnal residual.
+
+  Eigen::saveMarket(A2, "A2.mtx");
+
+  FILE* out = fopen("w.mtx","w");
+  fprintf(out, "%%%%MatrixMarket vector coordinate real general\n");
+  fprintf(out, "%d\n", static_cast<int>(w.size()));
+  for (int i = 0; i < w.size(); i++) {
+    fprintf(out,"%d %.16e\n", i + 1 , w(i));
+  }
+  fclose(out);
+
+  // LIS
+  lis_initialize(&argc, &argv);
+
+  // declarations
+  LIS_MATRIX A2_lis;
+  LIS_VECTOR w_lis;
+  LIS_VECTOR x_lis;
+  LIS_SOLVER solver;
+
+  // actually create and fill empty objects
+  lis_matrix_create(LIS_COMM_WORLD, &A2_lis);
+  lis_input_matrix(A2_lis, "A2.mtx");
+  lis_vector_create(LIS_COMM_WORLD, &w_lis);
+  lis_input_vector(w_lis, "w.mtx");
+
+  lis_vector_duplicate(A2_lis, &x_lis); // x same size of matrix A2_lis
+
+  // solver
+  lis_solver_create(&solver);
+  lis_solver_set_option("-i bicgstab -p ilu", solver); // bicgstab with ilu as precondtioner
+  lis_solver_set_option("-tol 1.0e-12", solver); // tol given
+  lis_solve(A2_lis, w_lis, x_lis, solver); 
+
+  // read #s to report and cout them
+  LIS_INT iterations;
+  LIS_REAL residual;
+  lis_solver_get_iter(solver, &iterations);
+  lis_solver_get_residualnorm(solver, &residual);
+  std::cout << "LIS iterations: " << iterations << "\n";
+  std::cout << "LIS final relative residual: " << residual << "\n";
+
+  // copy solution into Eigen, needed for next task
+  VectorXd x(width * height);
+  lis_vector_get_values(x_lis, 0, width * height, x.data());
+
+  // free space and close LIS!
+  lis_solver_destroy(solver);
+  lis_vector_destroy(x_lis);
+  lis_vector_destroy(w_lis);
+  lis_matrix_destroy(A2_lis);
+  lis_finalize();
 
   // • Convert the previous approximate solution vector x into a .png image.
   // Upload the resulting ﬁle here.
+
+  save_image(x, "deer_x.png", width, height);
 
   // • Write the convolution operation corresponding to the detection kernel
   // Hed2 as a matrix vector multiplication by a matrix A3 having size mn × mn.
@@ -265,12 +320,27 @@ int main() {
   save_image(edge_image, "deer_edges.png", width, height);
 
   // • Using a suitable iterative solver available in the Eigen library compute
-  // the approximate so- lution of the linear system (4I +A3)y = w, where I
-  // denotes the identity matrix, prescribing a tolerance of 10−10. Report here
+  // the approximate solution of the linear system (4I + A3)y = w, where I
+  // denotes the identity matrix, prescribing a tolerance of 10^−10. Report here
   // the iteration count and the ﬁnal residual.
+
+  // S = 4I + A3 is not simmetric, only the diagonal changes. Use again BiCGSTAB
+  // build S and sparse I
+  SpMat I(width * height, width * height);
+  I.setIdentity();
+  SpMat S = 4.0 * I + A3;
+
+  Eigen::BiCGSTAB<SpMat> bicgstab;
+  bicgstab.setTolerance(1.0e-10);
+  bicgstab.compute(S);
+  VectorXd y = bicgstab.solve(w);
+  std::cout << "Eigen iterations: " << bicgstab.iterations() << "\n";
+  std::cout << "Eigen final relative residual: " << bicgstab.error() << "\n";
 
   // • Import the previous approximate solution vector y in Eigen and convert it
   // into a .png image and upload it.
+
+  save_image(y, "deer_y.png", width, height);
 
   return 0;
 }
