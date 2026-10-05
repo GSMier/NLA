@@ -278,7 +278,7 @@ int main(int argc, char* argv[]) {
 
   // solver
   lis_solver_create(&solver);
-  lis_solver_set_option("-i bicgstab -p ilu", solver); // bicgstab with ilu as precondtioner
+  lis_solver_set_option("-i bicgstab -p ilut", solver); // bicgstab with ilu as precondtioner
   lis_solver_set_option("-tol 1.0e-12", solver); // tol given
   lis_solve(A2_lis, w_lis, x_lis, solver); 
 
