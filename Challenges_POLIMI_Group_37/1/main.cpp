@@ -200,6 +200,7 @@ int main(int argc, char* argv[]) {
   
   save_image(w, "noisy_image.png", width, height);
   
+  std::cout << "m: " << width << " n: " << height << "\n";
   std::cout << "m x n: " << width * height << "\n";
   std::cout << "Shape of image_data: " << get_shape(v.rows(), v.cols()) << "\n";
   std::cout << "Shape of noisy image: " << get_shape(w.rows(), w.cols()) << "\n";
