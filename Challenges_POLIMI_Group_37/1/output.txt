@@ -1,0 +1,17 @@
+m: 656 n: 656
+m x n: 430336
+Shape of image_data: (430336, 1)
+Shape of noisy image: (430336, 1)
+Correct vector sizes? 1
+Euclidean norm of the original image: 41415.3
+Shape of A1: (430336, 430336)
+Number of non-zero entries in A1: 3865156
+Non-zero entries in A2: 2149056
+Is A2 symmetric? 0
+matrix size = 430336 x 430336 (2149056 nonzero entries)
+
+LIS iterations: 8
+LIS final relative residual: 2.03103e-13
+Is A3 symmetric? 0
+Eigen iterations: 49
+Eigen final relative residual: 8.87574e-11
