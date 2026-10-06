@@ -311,6 +311,7 @@ int main(int argc, char* argv[]) {
   // Is m3 symmetric?
 
   SpMat A3 = generate_conv_matrix(Hed2, width, height);
+  std::cout << "Non-zero entries in A3: " << A3.nonZeros() << "\n";
   std::cout << "Is A3 symmetric? " << is_symmetric(A3) << "\n";
 
   // • Apply the previous edge detection ﬁlter to the original image by

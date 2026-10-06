@@ -12,6 +12,7 @@ matrix size = 430336 x 430336 (2149056 nonzero entries)
 
 LIS iterations: 8
 LIS final relative residual: 2.03103e-13
+Non-zero entries in A3: 2575460
 Is A3 symmetric? 0
 Eigen iterations: 49
 Eigen final relative residual: 8.87574e-11
