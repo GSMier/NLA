@@ -19,6 +19,33 @@ int main() {
   // between 0 (black) and 255 (white). Compute the matrix product A^T A and
   // report the euclidean norm of A^T A.  
 
+  const char* image_name = "deer.jpg";
+  int width, height, channels;
+  unsigned char *image_data = stbi_load(image_name, &width, &height, &channels, 1); // Force load as grayscale
+
+  if (!image_data) {
+    std::cerr << "Error: Could not load image " << image_name << "\n";
+    return 1;
+  }
+
+  // Fill matrix with image data 
+  MatrixXd A(height, width);
+  for (int i = 0; i < height; ++i) {
+    for (int j = 0; j < width; ++j) {
+      const int index = (i * width + j);
+      A(i, j) = image_data[index];
+    }
+  }
+  stbi_image_free(image_data);
+
+  std::cout << "Size of A (m, n): (" << A.rows() << ", " << A.cols() << ")\n";
+
+  // Compute A^T A, n x n, symmetric
+  MatrixXd ATA = A.transpose() * A;
+
+  std::cout << "Size of A^T A: (" << ATA.rows() << ", " << ATA.cols() << ")\n";
+  std::cout << "Euclidean norm of A^T A: " << ATA.norm() << "\n";
+
   // • Solve the eigenvalue problem A^T A x = λ x using the proper solver
   // provided by the Eigen library. Report the two largest computed singular
   // values of A.
