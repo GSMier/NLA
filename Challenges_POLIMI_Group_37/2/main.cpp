@@ -117,15 +117,35 @@ int main(int argc, char* argv[])
     // provided by the Eigen library. Report the two largest computed singular
     // values of A.
 
+    // A^T A symmetric, use SelfAdjointEigenSolver 
+    SelfAdjointEigenSolver<MatrixXd> eigensolver(ATA);
+
+    if (eigensolver.info() != Success) { // Safetycheck, stay safe out there
+        std::cerr << "Error: eigenvalue computation failed\n";
+        return 1;
+    }
+
+    //eigenvalures() returns vector with all eigenvalues (ma va?) in increasing order!
+    VectorXd eigenvalues = eigensolver.eigenvalues(); 
+    const Index n_eig = eigenvalues.size();
+
+    // The two largest are the LAST two, singular values of A = sqrt(eigenvaluess of A^T A)
+    std::cout << "Largest eigenvalues of A^T A: " << eigenvalues(n_eig - 1) << " and " << eigenvalues(n_eig - 2) << "\n";
+    std::cout << "Two largest singular values of A: " << std::sqrt(eigenvalues(n_eig - 1)) << " and " << std::sqrt(eigenvalues(n_eig - 2)) << "\n";
+
     // • Export matrix A^T A in the matrix market format and move it to the
     // lis-2.1.10_test folder. Using the proper iterative solver available in
     // the LIS library compute the largest eigenvalue of A^T A up to a tolerance
     // of 10^-10. Report the computed eigenvalue. Is the result in agreement with
     // the one obtained in the previous point?
 
+
+
     // • Find a shift μ ∈ R yielding an acceleration of the previous
     // eigensolver. Report μ and the number of iterations required to achieve a
     // tolerance of 10^-10.
+
+
 
     // • Using the SVD module of the Eigen library, perform a singular value
     // decomposition of the matrix A. Report the Euclidean norm of the diagonal
