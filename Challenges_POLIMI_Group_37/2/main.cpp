@@ -66,6 +66,6 @@ int main(int argc, char* argv[])
     MatrixXd original(height, width);
     load_image(image_name, width, height, channels, original);
 
-    // TODO everything 
+    // TODO everything  
 
 }
