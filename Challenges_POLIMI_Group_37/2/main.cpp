@@ -139,7 +139,13 @@ int main(int argc, char* argv[])
     // of 10^-10. Report the computed eigenvalue. Is the result in agreement with
     // the one obtained in the previous point?
 
+    SpMat ATA_sparse = ATA.sparseView(); // A^T A needs to be sparse 
+    Eigen::saveMarket(ATA_sparse, "ATA.mtx");
 
+    // Per completare il task 3, segui task3-lis-commands.txt
+    // Output salvato manualmente in task3-output.txt (nomi originalissimi)
+
+    std::cout << "Exported A^T A to ATA.mtx\n"; // Giusto per, il resto è su terminale
 
     // • Find a shift μ ∈ R yielding an acceleration of the previous
     // eigensolver. Report μ and the number of iterations required to achieve a
