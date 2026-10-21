@@ -142,7 +142,7 @@ int main(int argc, char* argv[])
     SpMat ATA_sparse = ATA.sparseView(); // A^T A needs to be sparse 
     Eigen::saveMarket(ATA_sparse, "ATA.mtx");
 
-    // Per completare il task 3, segui task3-lis-commands.txt
+    // Per completare il task 3, segui lis-commands.txt
     // Output salvato manualmente in task3-output.txt (nomi originalissimi)
 
     std::cout << "Exported A^T A to ATA.mtx\n"; // Giusto per, il resto è su terminale
@@ -151,7 +151,8 @@ int main(int argc, char* argv[])
     // eigensolver. Report μ and the number of iterations required to achieve a
     // tolerance of 10^-10.
 
-
+    // BASTA AGGIUNGERE -shift 5.64e7 (o valore preferito, questo credo sia migliore perché
+    // punto intermedio tra λ2 e λn, funziona bene dai), vedi lis-commands.txt
 
     // • Using the SVD module of the Eigen library, perform a singular value
     // decomposition of the matrix A. Report the Euclidean norm of the diagonal

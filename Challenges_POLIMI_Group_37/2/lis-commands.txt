@@ -1,0 +1,18 @@
+cp ATA.mtx /path/to/lis-2.1.10_test/
+cd /path/to/lis-2.1.10_test/
+
+Se non avete già caricato i moduli e l'apptainer correttamente:
+
+source /u/sw/etc/bash.bashrc
+module load gcc-glibc
+module load lis
+
+mpicc -DUSE_MPI -I"$mkLisInc" -L"$mkLisLib" -llis etest1.c -o etest1
+
+./etest1 ATA.mtx -e pi -etol 1.0e-10 
+
+
+
+FOR TASK 4:
+
+./etest1 ATA.mtx -e pi -etol 1.0e-10 -shift 5.64e7
