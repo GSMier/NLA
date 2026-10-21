@@ -2,4 +2,8 @@ Size of A (m, n): (656, 656)
 Size of A^T A: (656, 656)
 Euclidean norm of A^T A: 1.2105e+09
 Euclidean norm of the plain checkerboard: 72124.9
-The two largest singular values are: 51011.9 and 51002.4
+The two largest singular values are 51011.9 and 51002.4
+Size of C_1 (k = 6) (m, n): (400, 6)
+Size of D_1 (k = 6) (m, n): (400, 6)
+Size of C_2 (k = 12) (m, n): (400, 12)
+Size of D_2 (k = 12) (m, n): (400, 12)

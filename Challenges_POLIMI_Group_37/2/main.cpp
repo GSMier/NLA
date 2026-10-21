@@ -80,6 +80,17 @@ void generate_checkerboard(VectorXd &checkerboard, int c_size, int row_len, int 
 
 }
 
+MatrixXd get_C(MatrixXd &U, const int k)
+{
+    return U.leftCols(k);
+}
+
+MatrixXd get_D(VectorXd &S, MatrixXd &V, const int k)
+{
+    // here .head() is the analog for .leftCols() but for vectors
+    return V.leftCols(k) * S.head(k).asDiagonal();
+}
+
 int main(int argc, char* argv[])
 {
 
@@ -98,7 +109,7 @@ int main(int argc, char* argv[])
 
     // Compute A^T A, n x n, symmetric
     MatrixXd ATA = A.transpose() * A;
-
+    
     std::cout << "Size of A^T A: (" << ATA.rows() << ", " << ATA.cols() << ")\n";
     std::cout << "Euclidean norm of A^T A: " << ATA.norm() << "\n";
 
@@ -151,7 +162,7 @@ int main(int argc, char* argv[])
     VectorXd noisy = checkerboard;
     noisy += VectorXd::Random(c_size) * noise_bounds;
     // the clamping is inside save_image, so we don't need to worry about it here
-    save_image(noisy, "noisy_checkerboard.png", row_len, col_len);
+    save_image(noisy, "checkerboard_noisy.png", row_len, col_len);
 
     // • Using the SVD module of the Eigen library, perform a singular value
     // decomposition of the matrix corresponding to the noisy image. Report the
@@ -165,7 +176,6 @@ int main(int argc, char* argv[])
 
     MatrixXd U = svd.matrixU();
     VectorXd S = svd.singularValues();
-    // MatrixXd S_mat = S.asDiagonal();
     MatrixXd V = svd.matrixV();    
 
     // do NOT print this, it's gonna spam.
@@ -175,9 +185,44 @@ int main(int argc, char* argv[])
     // • Starting from the previously computed SVD, create the matrices C and D
     // defined in (1) assuming k = 6 and k = 12. Report the size of the matrices
     // C and D.
+    const int k_1 = 6;
+    MatrixXd C_1 = get_C(U, k_1);
+    MatrixXd D_1 = get_D(S, V, k_1);
+
+    std::cout << "Size of C_1 (k = " << k_1 << ") (m, n): (" << C_1.rows() << ", " << C_1.cols() << ")\n";
+    std::cout << "Size of D_1 (k = " << k_1 << ") (m, n): (" << D_1.rows() << ", " << D_1.cols() << ")\n";
+
+    const int k_2 = 12;
+    MatrixXd C_2 = get_C(U, k_2);
+    MatrixXd D_2 = get_D(S, V, k_2);
+
+    std::cout << "Size of C_2 (k = " << k_2 << ") (m, n): (" << C_2.rows() << ", " << C_2.cols() << ")\n";
+    std::cout << "Size of D_2 (k = " << k_2 << ") (m, n): (" << D_2.rows() << ", " << D_2.cols() << ")\n";
 
     // • Compute the compressed images as the matrix product C D^T (again for
     // k = 6 and k = 12). Export and upload the resulting images in .png.
+    MatrixXd A_1 = C_1 * D_1.transpose();
+    MatrixXd A_2 = C_2 * D_2.transpose();
+
+    VectorXd flat_A_1 = A_1.reshaped<RowMajor>();    
+    VectorXd flat_A_2 = A_2.reshaped<RowMajor>();    
+
+    save_image(flat_A_1, "checkerboard_k6.png", row_len, col_len);
+    save_image(flat_A_2, "checkerboard_k12.png", row_len, col_len);
+
+    // just for fun :)
+    // COMPRESS THE DEER
+
+    // BDCSVD<MatrixXd> deer_svd(A, ComputeThinU | ComputeThinV);
+    // MatrixXd deer_U = deer_svd.matrixU();
+    // VectorXd deer_S = deer_svd.singularValues();
+    // MatrixXd deer_V = deer_svd.matrixV();
+    // const int deer_k = 10;
+    // MatrixXd deer_C = get_C(deer_U, deer_k);
+    // MatrixXd deer_D = get_D(deer_S, deer_V, deer_k);
+    // MatrixXd deer = deer_C * deer_D.transpose();
+    // VectorXd flat = deer.reshaped<RowMajor>();    
+    // save_image(flat, "deer_svd.png", width, height);
 
     // • Compare the compressed images with the original and noisy images.
     // Comment the results.
