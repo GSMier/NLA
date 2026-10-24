@@ -16,244 +16,274 @@ typedef Eigen::SparseMatrix<double> SpMat;
 using namespace Eigen;
 
 // note that this works only for 1 channel images (grayscale)
-// removed the const because for non const vector the vector would have been passed as a copy
-void save_image(VectorXd& image, const char* filename, int width, int height)
-{   
-    
-    std::vector<unsigned char> output(image.size());
-    
-    for (Eigen::Index index = 0; index < image.size(); ++index)
-    {
-        output[index] = static_cast<unsigned char>(std::clamp(image(index), 0.0, 255.0));
-    }
-    
-    unsigned char* data = output.data();
-    
-    stbi_write_png(filename, width, height, 1, data, width);
-    
+// removed the const because for non const vector the vector would have been
+// passed as a copy
+void save_image(VectorXd &image, const char *filename, int width, int height) {
+
+  std::vector<unsigned char> output(image.size());
+
+  for (Eigen::Index index = 0; index < image.size(); ++index) {
+    output[index] =
+        static_cast<unsigned char>(std::clamp(image(index), 0.0, 255.0));
+  }
+
+  unsigned char *data = output.data();
+
+  stbi_write_png(filename, width, height, 1, data, width);
 }
 
 // because it was ugly to load images too :P
 // note that that the matrix is passed by reference!! (gotta go fast)
-MatrixXd load_image(const char* image_name, int &width, int &height, int &channels, MatrixXd &original)
-{
+MatrixXd load_image(const char *image_name, int &width, int &height,
+                    int &channels, MatrixXd &original) {
 
-    unsigned char *image_data = stbi_load(image_name, &width, &height, &channels, 1); // Force load as grayscale
+  unsigned char *image_data = stbi_load(image_name, &width, &height, &channels,
+                                        1); // Force load as grayscale
 
-    if (!image_data) std::cerr << "Error: Could not load image " << image_name << "\n";
+  if (!image_data)
+    std::cerr << "Error: Could not load image " << image_name << "\n";
 
-    original.resize(height, width); // Right size!  
+  original.resize(height, width); // Right size!
 
-    for (int i = 0; i < height; ++i)
-    {
-        for (int j = 0; j < width; ++j)
-        {
-            const int index = (i * width + j);
-            original(i, j) = static_cast<int>(image_data[index]);
-        }
+  for (int i = 0; i < height; ++i) {
+    for (int j = 0; j < width; ++j) {
+      const int index = (i * width + j);
+      original(i, j) = static_cast<int>(image_data[index]);
     }
+  }
 
-    stbi_image_free(image_data);
+  stbi_image_free(image_data);
 
-    return original;
-
+  return original;
 }
 
-void generate_checkerboard(VectorXd &checkerboard, int c_size, int row_len, int tile_height, int tile_size)
-{
+void generate_checkerboard(VectorXd &checkerboard, int c_size, int row_len,
+                           int tile_height, int tile_size) {
 
-    bool black = true;
+  bool black = true;
 
-    for (int i = 0; i <= c_size; ++i)
-    {
-        // everything is a const or constexpr so this gotta be FAST.
-        if (i % tile_size == 0 && i % tile_height != 0) black = !black;
+  for (int i = 0; i <= c_size; ++i) {
+    // everything is a const or constexpr so this gotta be FAST.
+    if (i % tile_size == 0 && i % tile_height != 0)
+      black = !black;
 
-        if (black)
-        {
-            checkerboard.coeffRef(i) = 0.0;
-            continue;
-        }
-        checkerboard.coeffRef(i) = 255.0;    
-
+    if (black) {
+      checkerboard.coeffRef(i) = 0.0;
+      continue;
     }
-
+    checkerboard.coeffRef(i) = 255.0;
+  }
 }
 
-MatrixXd get_C(MatrixXd &U, const int k)
-{
-    return U.leftCols(k);
+MatrixXd get_C(MatrixXd &U, const int k) { return U.leftCols(k); }
+
+MatrixXd get_D(VectorXd &S, MatrixXd &V, const int k) {
+  // here .head() is the analog for .leftCols() but for vectors
+  return V.leftCols(k) * S.head(k).asDiagonal();
 }
 
-MatrixXd get_D(VectorXd &S, MatrixXd &V, const int k)
-{
-    // here .head() is the analog for .leftCols() but for vectors
-    return V.leftCols(k) * S.head(k).asDiagonal();
-}
+int main(int argc, char *argv[]) {
 
-int main(int argc, char* argv[])
-{
+  int width, height, channels;
+  const char *image_name = "deer.jpg";
 
-    int width, height, channels;
-    const char* image_name = "deer.jpg";
+  // • Load the image as an Eigen matrix A with size m x n. Each entry in the
+  // matrix corresponds to a pixel on the screen and takes a value somewhere
+  // between 0 (black) and 255 (white). Compute the matrix product A^T A and
+  // report the euclidean norm of A^T A.
 
-    // • Load the image as an Eigen matrix A with size m x n. Each entry in the
-    // matrix corresponds to a pixel on the screen and takes a value somewhere
-    // between 0 (black) and 255 (white). Compute the matrix product A^T A and
-    // report the euclidean norm of A^T A.  
+  MatrixXd A;
+  load_image(image_name, width, height, channels, A);
 
-    MatrixXd A;   
-    load_image(image_name, width, height, channels, A);
+  std::cout << "Size of A (m, n): (" << A.rows() << ", " << A.cols() << ")\n";
 
-    std::cout << "Size of A (m, n): (" << A.rows() << ", " << A.cols() << ")\n";
+  // Compute A^T A, n x n, symmetric
+  MatrixXd ATA = A.transpose() * A;
 
-    // Compute A^T A, n x n, symmetric
-    MatrixXd ATA = A.transpose() * A;
-    
-    std::cout << "Size of A^T A: (" << ATA.rows() << ", " << ATA.cols() << ")\n";
-    std::cout << "Euclidean norm of A^T A: " << ATA.norm() << "\n";
+  std::cout << "Size of A^T A: (" << ATA.rows() << ", " << ATA.cols() << ")\n";
+  std::cout << "Euclidean norm of A^T A: " << ATA.norm() << "\n";
 
-    // • Solve the eigenvalue problem A^T A x = λ x using the proper solver
-    // provided by the Eigen library. Report the two largest computed singular
-    // values of A.
+  // • Solve the eigenvalue problem A^T A x = λ x using the proper solver
+  // provided by the Eigen library. Report the two largest computed singular
+  // values of A.
 
-    // A^T A symmetric, use SelfAdjointEigenSolver 
-    SelfAdjointEigenSolver<MatrixXd> eigensolver(ATA);
+  // A^T A symmetric, use SelfAdjointEigenSolver
+  SelfAdjointEigenSolver<MatrixXd> eigensolver(ATA);
 
-    if (eigensolver.info() != Success) { // Safetycheck, stay safe out there
-        std::cerr << "Error: eigenvalue computation failed\n";
-        return 1;
-    }
+  if (eigensolver.info() != Success) { // Safetycheck, stay safe out there
+    std::cerr << "Error: eigenvalue computation failed\n";
+    return 1;
+  }
 
-    //eigenvalures() returns vector with all eigenvalues (ma va?) in increasing order!
-    VectorXd eigenvalues = eigensolver.eigenvalues(); 
-    const Index n_eig = eigenvalues.size();
+  // eigenvalures() returns vector with all eigenvalues (ma va?) in increasing
+  // order!
+  VectorXd eigenvalues = eigensolver.eigenvalues();
+  const Index n_eig = eigenvalues.size();
 
-    // The two largest are the LAST two, singular values of A = sqrt(eigenvaluess of A^T A)
-    std::cout << "Largest eigenvalues of A^T A: " << eigenvalues(n_eig - 1) << " and " << eigenvalues(n_eig - 2) << "\n";
-    std::cout << "Two largest singular values of A: " << std::sqrt(eigenvalues(n_eig - 1)) << " and " << std::sqrt(eigenvalues(n_eig - 2)) << "\n";
+  // The two largest are the LAST two, singular values of A = sqrt(eigenvaluess
+  // of A^T A)
+  std::cout << "Largest eigenvalues of A^T A: " << eigenvalues(n_eig - 1)
+            << " and " << eigenvalues(n_eig - 2) << "\n";
+  std::cout << "Two largest singular values of A: "
+            << std::sqrt(eigenvalues(n_eig - 1)) << " and "
+            << std::sqrt(eigenvalues(n_eig - 2)) << "\n";
 
-    // • Export matrix A^T A in the matrix market format and move it to the
-    // lis-2.1.10_test folder. Using the proper iterative solver available in
-    // the LIS library compute the largest eigenvalue of A^T A up to a tolerance
-    // of 10^-10. Report the computed eigenvalue. Is the result in agreement with
-    // the one obtained in the previous point?
+  // • Export matrix A^T A in the matrix market format and move it to the
+  // lis-2.1.10_test folder. Using the proper iterative solver available in
+  // the LIS library compute the largest eigenvalue of A^T A up to a tolerance
+  // of 10^-10. Report the computed eigenvalue. Is the result in agreement with
+  // the one obtained in the previous point?
 
-    SpMat ATA_sparse = ATA.sparseView(); // A^T A needs to be sparse 
-    Eigen::saveMarket(ATA_sparse, "ATA.mtx");
+  SpMat ATA_sparse = ATA.sparseView(); // A^T A needs to be sparse
+  Eigen::saveMarket(ATA_sparse, "ATA.mtx");
 
-    // Per completare il task 3, segui lis-commands.txt
-    // Output salvato manualmente in task3-output.txt (nomi originalissimi)
+  // Per completare il task 3, segui lis-commands.txt
+  // Output salvato manualmente in task3-output.txt (nomi originalissimi)
 
-    std::cout << "Exported A^T A to ATA.mtx\n"; // Giusto per, il resto è su terminale
+  std::cout
+      << "Exported A^T A to ATA.mtx\n"; // Giusto per, il resto è su terminale
 
-    // • Find a shift μ ∈ R yielding an acceleration of the previous
-    // eigensolver. Report μ and the number of iterations required to achieve a
-    // tolerance of 10^-10.
+  // • Find a shift μ ∈ R yielding an acceleration of the previous
+  // eigensolver. Report μ and the number of iterations required to achieve a
+  // tolerance of 10^-10.
 
-    // BASTA AGGIUNGERE -shift 5.64e7 (o valore preferito, questo credo sia migliore perché
-    // punto intermedio tra λ2 e λn, funziona bene dai), vedi lis-commands.txt
+  // BASTA AGGIUNGERE -shift 5.64e7 (o valore preferito, questo credo sia
+  // migliore perché punto intermedio tra λ2 e λn, funziona bene dai), vedi
+  // lis-commands.txt
 
-    // • Using the SVD module of the Eigen library, perform a singular value
-    // decomposition of the matrix A. Report the Euclidean norm of the diagonal
-    // matrix Σ of the singular values.
+  // • Using the SVD module of the Eigen library, perform a singular value
+  // decomposition of the matrix A. Report the Euclidean norm of the diagonal
+  // matrix Σ of the singular values.
 
-    // • Compute the matrices C and D described in (1) assuming k = 30 and
-    // k = 90. Report the number of nonzero entries in the matrices C and D.
+  BDCSVD<MatrixXd> svd_A(A, ComputeThinU | ComputeThinV);
+  MatrixXd U_A = svd_A.matrixU();
+  VectorXd S_A = svd_A.singularValues();
+  MatrixXd V_A = svd_A.matrixV();
 
-    // • Compute the compressed images as the matrix product C D^T (again for
-    // k = 30 and k = 90). Export and upload the resulting images in .png.
+  std::cout << "Euclidean norm of matrix Σ : " << S_A.norm() << "\n";
 
-    //===============================================================================
+  // • Compute the matrices C and D described in (1) assuming k = 30 and
+  // k = 90. Report the number of nonzero entries in the matrices C and D.
 
-    // • Using Eigen create a black and white checkerboard image (as the one
-    // depicted below) with height and width equal to 400 pixels. Report the
-    // Euclidean norm of the matrix corresponding to the image.
+  const int k_30 = 30;
+  MatrixXd C_30 = get_C(U_A, k_30);
+  MatrixXd D_30 = get_D(S_A, V_A, k_30);
 
-    const unsigned int row_len = 400;
-    const unsigned int col_len = 400;
-    const unsigned int tile_size = 40;
+  const int k_90 = 90;
+  MatrixXd C_90 = get_C(U_A, k_90);
+  MatrixXd D_90 = get_D(S_A, V_A, k_90);
 
-    constexpr unsigned int c_size = row_len * col_len;
-    constexpr unsigned int tile_height = row_len * tile_size;
-    VectorXd checkerboard(c_size);
-    generate_checkerboard(checkerboard, c_size, row_len, tile_height, tile_size);
-    // save_image(checkerboard, "checkerboard.png", row_len, col_len);
-    std::cout << "Euclidean norm of the plain checkerboard: " << checkerboard.norm() << "\n";
+  printf("Number of nonzero entries k=30, C: %ld and D: %ld\n",C_30.nonZeros(),D_30.nonZeros());
+  printf("Number of nonzero entries k=90, C: %ld and D: %ld\n",C_90.nonZeros(),D_90.nonZeros());
 
-    // • Introduce a noise into the checkerboard image by adding random
-    // fluctuations of color ranging between [-60, 60] to each pixel. Export the
-    // resulting image in .png and upload it.
 
-    const int noise_bounds = 60;
-    VectorXd noisy = checkerboard;
-    noisy += VectorXd::Random(c_size) * noise_bounds;
-    // the clamping is inside save_image, so we don't need to worry about it here
-    save_image(noisy, "checkerboard_noisy.png", row_len, col_len);
 
-    // • Using the SVD module of the Eigen library, perform a singular value
-    // decomposition of the matrix corresponding to the noisy image. Report the
-    // two largest computed singular values.
-    
-    MatrixXd noisy_mat = noisy.reshaped<RowMajor>(row_len, col_len);
+  // • Compute the compressed images as the matrix product C D^T (again for
+  // k = 30 and k = 90). Export and upload the resulting images in .png.
+  MatrixXd deer_30 = C_30 * D_30.transpose();
+  VectorXd flat_30 = deer_30.reshaped<RowMajor>();
+  save_image(flat_30, "deer_k_30.png", width, height);  
+  
+  MatrixXd deer_90 = C_90 * D_90.transpose();
+  VectorXd flat_90 = deer_90.reshaped<RowMajor>();
+  save_image(flat_90, "deer_k_90.png", width, height);
 
-    // the computationOptions are here to get the values of U and V. we can choose between full and thin but
-    // since our checkerboard is square it doesn't change anything
-    BDCSVD<MatrixXd> svd(noisy_mat, ComputeThinU | ComputeThinV);
+  //===============================================================================
 
-    MatrixXd U = svd.matrixU();
-    VectorXd S = svd.singularValues();
-    MatrixXd V = svd.matrixV();    
+  // • Using Eigen create a black and white checkerboard image (as the one
+  // depicted below) with height and width equal to 400 pixels. Report the
+  // Euclidean norm of the matrix corresponding to the image.
 
-    // do NOT print this, it's gonna spam.
-    // std::cout << "Singular values of the noisy checkerboard: " << S;
-    std::cout << "The two largest singular values are " << S[0] << " and " << S[1] << "\n"; 
+  const unsigned int row_len = 400;
+  const unsigned int col_len = 400;
+  const unsigned int tile_size = 40;
 
-    // • Starting from the previously computed SVD, create the matrices C and D
-    // defined in (1) assuming k = 6 and k = 12. Report the size of the matrices
-    // C and D.
-    const int k_1 = 6;
-    MatrixXd C_1 = get_C(U, k_1);
-    MatrixXd D_1 = get_D(S, V, k_1);
+  constexpr unsigned int c_size = row_len * col_len;
+  constexpr unsigned int tile_height = row_len * tile_size;
+  VectorXd checkerboard(c_size);
+  generate_checkerboard(checkerboard, c_size, row_len, tile_height, tile_size);
+  // save_image(checkerboard, "checkerboard.png", row_len, col_len);
+  std::cout << "Euclidean norm of the plain checkerboard: "
+            << checkerboard.norm() << "\n";
 
-    std::cout << "Size of C_1 (k = " << k_1 << ") (m, n): (" << C_1.rows() << ", " << C_1.cols() << ")\n";
-    std::cout << "Size of D_1 (k = " << k_1 << ") (m, n): (" << D_1.rows() << ", " << D_1.cols() << ")\n";
+  // • Introduce a noise into the checkerboard image by adding random
+  // fluctuations of color ranging between [-60, 60] to each pixel. Export the
+  // resulting image in .png and upload it.
 
-    const int k_2 = 12;
-    MatrixXd C_2 = get_C(U, k_2);
-    MatrixXd D_2 = get_D(S, V, k_2);
+  const int noise_bounds = 60;
+  VectorXd noisy = checkerboard;
+  noisy += VectorXd::Random(c_size) * noise_bounds;
+  // the clamping is inside save_image, so we don't need to worry about it here
+  save_image(noisy, "checkerboard_noisy.png", row_len, col_len);
 
-    std::cout << "Size of C_2 (k = " << k_2 << ") (m, n): (" << C_2.rows() << ", " << C_2.cols() << ")\n";
-    std::cout << "Size of D_2 (k = " << k_2 << ") (m, n): (" << D_2.rows() << ", " << D_2.cols() << ")\n";
+  // • Using the SVD module of the Eigen library, perform a singular value
+  // decomposition of the matrix corresponding to the noisy image. Report the
+  // two largest computed singular values.
 
-    // • Compute the compressed images as the matrix product C D^T (again for
-    // k = 6 and k = 12). Export and upload the resulting images in .png.
-    MatrixXd A_1 = C_1 * D_1.transpose();
-    MatrixXd A_2 = C_2 * D_2.transpose();
+  MatrixXd noisy_mat = noisy.reshaped<RowMajor>(row_len, col_len);
 
-    VectorXd flat_A_1 = A_1.reshaped<RowMajor>();    
-    VectorXd flat_A_2 = A_2.reshaped<RowMajor>();    
+  // the computationOptions are here to get the values of U and V. we can choose
+  // between full and thin but since our checkerboard is square it doesn't
+  // change anything
+  BDCSVD<MatrixXd> svd(noisy_mat, ComputeThinU | ComputeThinV);
 
-    save_image(flat_A_1, "checkerboard_k6.png", row_len, col_len);
-    save_image(flat_A_2, "checkerboard_k12.png", row_len, col_len);
+  MatrixXd U = svd.matrixU();
+  VectorXd S = svd.singularValues();
+  MatrixXd V = svd.matrixV();
 
-    // just for fun :)
-    // COMPRESS THE DEER
+  // do NOT print this, it's gonna spam.
+  // std::cout << "Singular values of the noisy checkerboard: " << S;
+  std::cout << "The two largest singular values are " << S[0] << " and " << S[1]
+            << "\n";
 
-    // BDCSVD<MatrixXd> deer_svd(A, ComputeThinU | ComputeThinV);
-    // MatrixXd deer_U = deer_svd.matrixU();
-    // VectorXd deer_S = deer_svd.singularValues();
-    // MatrixXd deer_V = deer_svd.matrixV();
-    // const int deer_k = 10;
-    // MatrixXd deer_C = get_C(deer_U, deer_k);
-    // MatrixXd deer_D = get_D(deer_S, deer_V, deer_k);
-    // MatrixXd deer = deer_C * deer_D.transpose();
-    // VectorXd flat = deer.reshaped<RowMajor>();    
-    // save_image(flat, "deer_svd.png", width, height);
+  // • Starting from the previously computed SVD, create the matrices C and D
+  // defined in (1) assuming k = 6 and k = 12. Report the size of the matrices
+  // C and D.
+  const int k_1 = 6;
+  MatrixXd C_1 = get_C(U, k_1);
+  MatrixXd D_1 = get_D(S, V, k_1);
 
-    // • Compare the compressed images with the original and noisy images.
-    // Comment the results.
+  std::cout << "Size of C_1 (k = " << k_1 << ") (m, n): (" << C_1.rows() << ", "
+            << C_1.cols() << ")\n";
+  std::cout << "Size of D_1 (k = " << k_1 << ") (m, n): (" << D_1.rows() << ", "
+            << D_1.cols() << ")\n";
 
-    return 0;
+  const int k_2 = 12;
+  MatrixXd C_2 = get_C(U, k_2);
+  MatrixXd D_2 = get_D(S, V, k_2);
 
+  std::cout << "Size of C_2 (k = " << k_2 << ") (m, n): (" << C_2.rows() << ", "
+            << C_2.cols() << ")\n";
+  std::cout << "Size of D_2 (k = " << k_2 << ") (m, n): (" << D_2.rows() << ", "
+            << D_2.cols() << ")\n";
+
+  // • Compute the compressed images as the matrix product C D^T (again for
+  // k = 6 and k = 12). Export and upload the resulting images in .png.
+  MatrixXd A_1 = C_1 * D_1.transpose();
+  MatrixXd A_2 = C_2 * D_2.transpose();
+
+  VectorXd flat_A_1 = A_1.reshaped<RowMajor>();
+  VectorXd flat_A_2 = A_2.reshaped<RowMajor>();
+
+  save_image(flat_A_1, "checkerboard_k6.png", row_len, col_len);
+  save_image(flat_A_2, "checkerboard_k12.png", row_len, col_len);
+
+  // just for fun :)
+  // COMPRESS THE DEER
+
+  // BDCSVD<MatrixXd> deer_svd(A, ComputeThinU | ComputeThinV);
+  // MatrixXd deer_U = deer_svd.matrixU();
+  // VectorXd deer_S = deer_svd.singularValues();
+  // MatrixXd deer_V = deer_svd.matrixV();
+  // const int deer_k = 10;
+  // MatrixXd deer_C = get_C(deer_U, deer_k);
+  // MatrixXd deer_D = get_D(deer_S, deer_V, deer_k);
+  // MatrixXd deer = deer_C * deer_D.transpose();
+  // VectorXd flat = deer.reshaped<RowMajor>();
+  // save_image(flat, "deer_svd.png", width, height);
+
+  // • Compare the compressed images with the original and noisy images.
+  // Comment the results.
+
+  return 0;
 }
